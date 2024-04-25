@@ -3,8 +3,8 @@ pipeline {
     agent any
     
     environment {
-        dockerHubCredentialsID	            = 'DockerHub'  		    			      // DockerHub credentials ID.
-        imageName   		            = 'alikhames/nti-python-app'     			// DockerHub repo/image name.
+        dockerHubCredentialsID	            = 'Dockerhub'  		    			      // DockerHub credentials ID.
+        imageName   		            = 'mohamedmasry/nti-app'     			// DockerHub repo/image name.
 	    k8sCredentialsID	            = 'kubernetes'	    				     // KubeConfig credentials ID.    
     }
     
@@ -32,7 +32,7 @@ pipeline {
         stage('Edit new image in deployment.yaml file') {
             steps {
                 script { 
-                	dir('k8s') {
+                	 {
 				        editNewImage("${imageName}")
 			}
                 }
@@ -41,7 +41,7 @@ pipeline {
         stage('Deploy on k8s Cluster') {
             steps {
                 script { 
-                	dir('k8s') {
+                	{
 				         deployOnKubernetes("${k8sCredentialsID}")
                     }
                 }
