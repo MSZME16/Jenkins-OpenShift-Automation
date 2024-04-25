@@ -1,30 +1,26 @@
 @Library('Jenkins-Shared-Library')
+
 pipeline {
     agent any
     
     environment {
-        dockerHubCredentialsID	            = 'Dockerhub'  		    			      // DockerHub credentials ID.
-        imageName   		            = 'mohamedmasry/nti-app'     			// DockerHub repo/image name.
-	    k8sCredentialsID	            = 'kubernetes'	    				     // KubeConfig credentials ID.    
+        dockerHubCredentialsID = 'Dockerhub'                              // DockerHub credentials ID.
+        imageName = 'mohamedmasry/nti'                                    // DockerHub repo/image name.
+        k8sCredentialsID = 'kubernetes'                                    // KubeConfig credentials ID.
     }
     
     stages {       
-       
         stage('Build Docker image from Dockerfile in GitHub') {
             steps {
                 script {
-                 	
-                 		buildDockerImage("${imageName}")
-                      
+                  buildDockerImage("${imageName}")
                 }
             }
         }
         stage('Push image to Docker hub') {
             steps {
                 script {
-                 	
-                 		pushDockerImage("${dockerHubCredentialsID}", "${imageName}")
-                      
+                  pushDockerImage("${dockerHubCredentialsID}", "${imageName}")
                 }
             }
         }
@@ -32,18 +28,18 @@ pipeline {
         stage('Edit new image in deployment.yaml file') {
             steps {
                 script { 
-                	 {
+                     {
 				        editNewImage("${imageName}")
-			}
+			        }
                 }
             }
         }
         stage('Deploy on k8s Cluster') {
             steps {
                 script { 
-                	{
-				         deployOnKubernetes("${k8sCredentialsID}")
-                    }
+                     {
+				        deployOnKubernetes("${k8sCredentialsID}")
+			        }
                 }
             }
         }
