@@ -28,7 +28,7 @@ pipeline {
         stage('Edit new image in deployment.yaml file') {
             steps {
                 script { 
-                    dir('k8s') {
+                    dir('.') {
 				        editNewImage("${imageName}")
 			        }
                 }
@@ -37,7 +37,7 @@ pipeline {
         stage('Deploy on k8s Cluster') {
             steps {
                 script { 
-                    dir('k8s') {
+                    dir('.') {
 				        deployOnKubernetes("${k8sCredentialsID}")
 			        }
                 }
