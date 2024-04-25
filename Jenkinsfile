@@ -1,47 +1,48 @@
+@Library('Jenkins-Shared-Library')_
 pipeline {
     agent any
-
+    
     environment {
-        APP_IMAGE_NAME      = 'ibrahimadel10/new-app'   //DockerHubub_repo/Image_name
-        Dockerfile_PATH     = './Dockerfile'	       //Path to Dockerfile in github repo
-        DEPLOYMENT_PATH     = './deployment.yaml'     //Path to deployment.yaml file in github repo
+        dockerHubCredentialsID	        = 'DockerHub'  		    			      // DockerHub credentials ID.
+        imageName   		            = 'mohamedmasry/nti'     			// DockerHub repo/image name.
+	    k8sCredentialsID	            = 'kubernetes'	    				     // KubeConfig credentials ID.    
     }
-
-    stages {
-        
-        stage('Build and Push to DockerHub') {
+    
+    stages {       
+       
+        stage('Build Docker image from Dockerfile in GitHub') {
             steps {
                 script {
-                    // Build Docker image
-                    sh "docker build -t ${APP_IMAGE_NAME}:${BUILD_NUMBER} -f ${Dockerfile_PATH} ."
-
-                    // Log in to DockerHub 
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
-                        sh "docker login -u \$DOCKERHUB_USERNAME -p \$DOCKERHUB_PASSWORD"
-                    }
-
-                    // Push image to Docker Hub
-                    sh "docker push ${APP_IMAGE_NAME}:${BUILD_NUMBER}"
+                 	
+                 		buildDockerImage("${imageName}")
+                      
+                }
+            }
+        }
+        stage('Push image to Docker hub') {
+            steps {
+                script {
+                 	
+                 		pushDockerImage("${dockerHubCredentialsID}", "${imageName}")
+                      
                 }
             }
         }
 
-        stage('Remove Local Images') {
+        stage('Edit new image in deployment.yaml file') {
             steps {
-                // Delete local Docker image after push them to DockerHub
-                sh "docker rmi ${APP_IMAGE_NAME}:${BUILD_NUMBER}"
+                script { 
+                	dir('k8s') {
+				        editNewImage("${imageName}")
+			}
+                }
             }
         }
-
-        stage('Update Deployment Manifest and Deploy to OpenShift') {
+        stage('Deploy on k8s Cluster') {
             steps {
-                script {
-                    // Update deployment.yaml file with the new Docker image
-                    sh "sed -i 's|image:.*|image: ${APP_IMAGE_NAME}:${BUILD_NUMBER}|g' ${DEPLOYMENT_PATH}"
-
-                    // Deploy updated manifest to OpenShift
-                   withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE')]) {
-                        sh "export KUBECONFIG=\$KUBECONFIG_FILE && oc apply -f ${DEPLOYMENT_PATH} -n ibrahim"
+                script { 
+                	dir('k8s') {
+				         deployOnKubernetes("${k8sCredentialsID}")
                     }
                 }
             }
@@ -49,6 +50,9 @@ pipeline {
     }
 
     post {
+        always {
+            echo "${JOB_NAME}-${BUILD_NUMBER} pipeline always succeeded"
+        }
         success {
             echo "${JOB_NAME}-${BUILD_NUMBER} pipeline succeeded"
         }
@@ -57,4 +61,3 @@ pipeline {
         }
     }
 }
-
